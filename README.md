@@ -32,7 +32,7 @@ Criterion Rules have three basic operations: variable declaration, value assignm
 
 ### Variable Declaration
 
-This example declares a `myVar` variable that has type `integer`. 7In general the declarations are used to define the input variables of a rule. Refer to the [Crtierion Data Types](#criterion-data-types) section to see the possible types a variable can have.
+This example declares a `myVar` variable that has type `integer`. 7In general the declarations are used to define the input variables of a rule. Refer to the [Criterion Data Types](#criterion-data-types) section to see the possible types a variable can have.
 
 ```json
 {
@@ -92,7 +92,7 @@ A Return Literal represents a value that is returned by calling a function. In t
 
 The Data Source Literal represents a value that is extracted from a Data Source, like a JSON or XML document.
 
-In this example, we reference the "patient" (Data Source)[data-source-block], and extract an exact data point using JSON Path, the patient's gender, and assign that to the patient_sex` variable:
+In this example, we reference the "patient" [Data Source](#data-source-block), and extract an exact data point using JSON Path, the patient's gender, and assign that to the patient_sex` variable:
 
 ```json
 {
@@ -112,7 +112,7 @@ In this example, we reference the "patient" (Data Source)[data-source-block], an
 
 ### Declare Assignment
 
-This operation is the combination of Variable Declaration and Value Assignment. The values that can be assigned are (Arguments)[#arguments] as mentioned on the previous sections.
+This operation is the combination of Variable Declaration and Value Assignment. The values that can be assigned are [Arguments](#arguments) as mentioned on the previous sections.
 
 #### Dec-Assign Literal
 
