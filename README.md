@@ -7,7 +7,22 @@ Criterion is a Generic Rule Engine. This is the public specification of the rule
 The Criterion Rule Format is expressed in JSON, and includes two main sections: input and logic. The input is the declaration of the Variables that are needed by the rule's logic. The logic is a sequence of Blocks that define what the rule does.
 
 ```json
-TODO: example
+{
+  "name": "Sample Rule",
+  "input": [
+    {
+      "var": "input1",
+      "type": "string"
+    },
+    {
+      "var": "input2",
+      "type": "integer"
+    }
+  ],
+  "logic": [
+    ...
+  ]
+}
 ```
 
 
@@ -129,7 +144,24 @@ This example declares the variable `myVar` and assigns the value returned by the
 
 #### Dec-Assign Data Source Literal
 
-TBD
+This example extracts the value form the `patient` Data Source, and assigns it to the variable `sex`.
+
+```json
+{
+  "var": "sex",
+  "type": "string",
+  "=": {
+    "source": "@patient",
+    "extract": {
+      "jsonpath": [
+        "$.gender"
+      ]
+    },
+    "aggregate": "first",
+    "transform": "noop"
+  }
+}
+```
 
 
 
@@ -173,9 +205,21 @@ In this example the rule would return the current value of `anotherVar`.
 
 #### Return Block Data Source Literal
 
-TBD
-```json
+This example returns a value extracted from the `patient` Data Source.
 
+```json
+{
+  "return": {
+    "source": "@patient",
+    "extract": {
+      "jsonpath": [
+        "$.gender"
+      ]
+    },
+    "aggregate": "first",
+    "transform": "noop"
+  }
+}
 ```
 
 
