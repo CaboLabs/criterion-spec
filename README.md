@@ -66,7 +66,22 @@ A Return Literal represents a value that is returned by calling a function. In t
 
 The Data Source Literal represents a value that is extracted from a Data Source, like a JSON or XML document.
 
-TBD
+In this example, we reference the "patient" (Data Source)[data-source-block], and extract an exact data point using JSON Path, the patient's gender, and assign that to the patient_sex` variable:
+
+```json
+{
+  "$patient_sex": {
+    "source": "@patient",
+    "extract": {
+      "jsonpath": [
+        "$.gender"
+      ]
+    },
+    "aggregate": "first",
+    "transform": "noop"
+  }
+}
+```
 
 
 
@@ -182,7 +197,21 @@ TBD
 
 ### Data Source Block
 
-TBD
+A Data Source Block describes the access to an external resource throw some kind of Data Access (HTTP, FILE, DB, etc.) to retrieve and cache some type of data (JSON, XML, HTML, CSV, etc.) that can be then accessed via a Data Source Literal to extract values from the Data Source.
+
+In this example, we are retrieving a JSON document via an HTTP GET request, and call that Data Source "patient". Check the (Data Source Literal Assignment)[data-source-literal-assignment] section to check how to access this Data Source. For instance, there could be two Data Source Literals that extract the patient's sex and date of birth from the same Data Source.
+
+```json
+{
+  "source": "patient",
+  "type": "JSON",
+  "access": {
+    "type": "http",
+    "url": "https://my-fhir-server/Patient/1234",
+    "method": "GET"
+  }
+}
+```
 
 
 
