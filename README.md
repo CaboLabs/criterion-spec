@@ -222,21 +222,42 @@ This example returns a value extracted from the `patient` Data Source.
 }
 ```
 
-### List Block
+### Block List
 
-Defines a list of blocks that can be used by the rule or by other blocks. For instance the rule's `logic` section is a List Block. Another example is the If-Else's `then` and `else` blocks are List Blocks.
+Defines a list of blocks that can be used by the rule or by other blocks. For instance the rule's `logic` section is a Block List. Another example is the If-Else's `then` and `else` blocks are Block Lists. In this example we have a Block List with two blocks: a Dec-Assign and a Return block.
 
 ```json
 [
-  block1,
-  block2,
-  ...
+  {
+    "var": "a",
+    "type": "integer",
+    "=": "1"
+  },
+  {
+    "return": "$a"
+  }
 ]
 ```
 
 ### If-Else Block
 
-TBD
+This is a flow-control block, that checks a boolean condition, and when the condition evaluates to `true`, the blocks in the `then` Block List are executed, otherwise the bloks in the `else` Block List are executed.
+
+```json
+{
+  "if": "$is_pending",
+  "then": [
+    {
+      "return": "555"
+    }
+  ],
+  "else":[
+    {
+      "return": "890"
+    }
+  ]
+}
+```
 
 ### Data Source Block
 
