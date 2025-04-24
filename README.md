@@ -291,15 +291,187 @@ In this example, we are retrieving a JSON document via an HTTP GET request, and 
 
 ## Functions
 
-TBD
+Functions can receive 0..N input parameters, which will be a type of [Argument](#arguments) and will return a Literal Argument. In general, the result of a Function will be assigned to a Variable or used as input for another Function.
+
 
 ### Logic
 
+Logic functions are boolean functions (return true or false), and have boolean [Arguments](#arguments) as input.
+
+#### And
+
+The result is `true` if both input [Arguments](#arguments) are `true`, otherwise the result will be `false`. In this example, we show the `and` function being called using boolean Literal Arguments `true` and `false`, though any of the inputs can be any type of Argument (Literal, Variable Reference, Return Literal or Data Source Literal).
+
+```json
+{
+  "&&": [true, false]
+}
+```
+
+#### Or
 TBD
+```json
+{
+  "||": [true, false]
+}
+```
+
+#### Not
+TBD
+
+```json
+{
+  "!": [true, false]
+}
+```
+
+#### Xor
+TBD
+
+```json
+{
+  "xor": [true, false]
+}
+```
+
+
+
+
+### Comparison
+
+The input values for the comparison should be `comparable`, that is:
+
+1. Are of the same data type (can't compare a number to a string).
+2. Have an order relationship.
+
+Note that all comparison functions are boolean functions (return `true` or `false`).
+
+#### Lower Than
+
+This function will return `true` if the value represented by the first Argument is lower than the value represented by the second Argument, otherwise it will return `false`.
+
+```json
+{
+  "<": [1, 2]
+}
+```
+
+#### Greater Than
+TBD
+
+```json
+{
+  ">": [1, 2]
+}
+```
+
+#### Equals To
+TBD
+
+
+```json
+{
+  "==": [1, 2]
+}
+```
+
+#### Not Equals To / Different Than
+TBD
+
+```json
+{
+  "!=": [1, 2]
+}
+```
+
+#### Lower Or Equals
+TBD
+
+```json
+{
+  "<=": [1, 2]
+}
+```
+
+#### Greater Or Equals
+TBD
+
+```json
+{
+  ">=": [1, 2]
+}
+```
+
+
+
 
 ### Arithmetic
 
 TBD
+
+#### Increment
+
+Increments the value "in place" and returns it. If the input Argument is a Variable Reference, it will increment the value of that variable.
+
+```json
+{
+  "++": $myNumber
+}
+```
+
+
+#### Decrement
+
+TBD
+
+```json
+{
+  "--": $myNumber
+}
+```
+
+#### Addition
+TBD
+
+```json
+{
+  "+": [1, 2]
+}
+```
+
+#### Subtraction
+TBD
+```json
+{
+  "-": [1, 2]
+}
+```
+
+#### Division
+TBD
+```json
+{
+  "/": [1, 2]
+}
+```
+
+#### Multiplication
+TBD
+
+```json
+{
+  "*": [1, 2]
+}
+```
+#### Modulus
+TBD
+
+```json
+{
+  "%": [1, 2]
+}
+```
+
 
 ### Strings
 
