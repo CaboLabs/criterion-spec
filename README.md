@@ -222,7 +222,6 @@ This example returns a value extracted from the `patient` Data Source.
 }
 ```
 
-
 ### List Block
 
 Defines a list of blocks that can be used by the rule or by other blocks. For instance the rule's `logic` section is a List Block. Another example is the If-Else's `then` and `else` blocks are List Blocks.
