@@ -32,7 +32,7 @@ Criterion Rules have three basic operations: variable declaration, value assignm
 
 ### Variable Declaration
 
-This example declares a `myVar` variable that has type `integer`. In general the declarations are used to define the input variables of a rule. Refer to the [Crtierion Data Types](#criterion-data-types) section to see the possible types a variable can have.
+This example declares a `myVar` variable that has type `integer`. 7In general the declarations are used to define the input variables of a rule. Refer to the [Crtierion Data Types](#criterion-data-types) section to see the possible types a variable can have.
 
 ```json
 {
@@ -41,9 +41,20 @@ This example declares a `myVar` variable that has type `integer`. In general the
 }
 ```
 
+
+### Arguments
+
+The values that can be assigned or used as function parameters are called Argument. Arguments can have four types:
+
+1. Literal: represents a simple constant value of a certain type like the integer `2` or the string `"hellow world"`.
+2. Value Reference: represents the reference to an existing variable by its name, and always starts with `$`, for instance `$myVar`.
+3. Return Literal: represents the value returned by a function, and which can be assigned to a variable.
+4. Data Source Literal: represents a value that is extracted and retrieved from a Data Source (JSON, XML, etc).
+
+
 ### Value Assignment
 
-The Criterion Rule Format defines four types of values that can be assigned to variables: Literal, Value Reference, Return Literal and Data Source Literal.
+As mentioned in the previous section, the Criterion Rule Format defines four types of values (called Arguments) that can be assigned to variables: Literal, Value Reference, Return Literal and Data Source Literal. The following examples show how to assign each type of Argument.
 
 #### Literal Value Assignment
 
@@ -99,10 +110,9 @@ In this example, we reference the "patient" (Data Source)[data-source-block], an
 ```
 
 
-
 ### Declare Assignment
 
-This operation is the combination of Variable Declaration and Value Assignment. The values assigned can be of the four types mentioned in the previous section: Literal, Value Reference, Return Literal and Data Source Literal.
+This operation is the combination of Variable Declaration and Value Assignment. The values that can be assigned are (Arguments)[#arguments] as mentioned on the previous sections.
 
 #### Dec-Assign Literal
 
