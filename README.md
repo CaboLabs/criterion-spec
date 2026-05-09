@@ -251,7 +251,7 @@ Defines a list of blocks that can be used by the rule or by other blocks. For in
 
 ### If-Else Block
 
-This is a flow-control block, that checks a boolean condition, and when the condition evaluates to `true`, the blocks in the `then` Block List are executed, otherwise the bloks in the `else` Block List are executed.
+This is a flow-control block that checks a boolean condition. When the condition evaluates to `true`, the blocks in the `then` Block List are executed; otherwise the blocks in the `else` Block List are executed. The condition must resolve to `boolean` — passing any other type is a compile-time error.
 
 ```json
 {
@@ -271,9 +271,13 @@ This is a flow-control block, that checks a boolean condition, and when the cond
 
 ### Data Source Block
 
-A Data Source Block describes the access to an external resource throw some kind of Data Access (HTTP, FILE, DB, etc.) to retrieve and cache some type of data (JSON, XML, HTML, CSV, etc.) that can be then accessed via a Data Source Literal to extract values from the Data Source.
+A Data Source Block is an **inbound, read-only** construct. It retrieves data from an external resource, caches it under a named identifier, and makes it available for extraction via Data Source Literals. The data is fetched once and reused for all literals that reference it within the same rule execution.
 
-In this example, we are retrieving a JSON document via an HTTP GET request, and call that Data Source "patient". Check the (Data Source Literal Assignment)[data-source-literal-assignment] section to check how to access this Data Source. For instance, there could be two Data Source Literals that extract the patient's sex and date of birth from the same Data Source.
+The external access is configured via the `access` field, which specifies the transport type (`http`, `db`, `file`, etc.) and the parameters needed to fetch the data. See [External Access Types](#external-access-types) for details.
+
+A Data Source Block is strictly read-only. It must not modify any external state. Outbound operations (sending data, triggering hooks, writing to a database) are handled by Action Blocks, which are a separate construct that uses the same underlying access types in write mode. See [Action Blocks](#action-blocks) in the Candidate Features section.
+
+In this example, we retrieve a JSON document via an HTTP GET request and name it "patient". Check the [Data Source Literal Assignment](#data-source-literal-assignment) section to see how to extract values from it. Multiple Data Source Literals can reference the same source — for instance, one to extract the patient's gender and another for their date of birth — without triggering additional requests.
 
 ```json
 {
@@ -286,6 +290,18 @@ In this example, we are retrieving a JSON document via an HTTP GET request, and 
   }
 }
 ```
+
+### External Access Types
+
+Access types define the transport mechanism used by both Data Source Blocks (read) and Action Blocks (write). They are not tied to either concept — the same `http` access type that performs a GET for a Data Source can perform a POST in an Action Block.
+
+Defined access types:
+
+| Type | Description |
+|---|---|
+| `http` | HTTP/HTTPS request. Method determines direction: `GET` for data sources, `POST`/`PUT`/`DELETE` for actions. |
+| `db` | Database access. Query type determines direction: `SELECT` for data sources, `INSERT`/`UPDATE`/`DELETE` for actions. |
+| `file` | File system access. Read for data sources, write for actions. |
 
 
 
@@ -343,12 +359,45 @@ Returns `true` if exactly one of the two input Arguments is `true`. If both are 
 
 ### Comparison
 
-The input values for the comparison should be `comparable`, that is:
+All comparison functions return `boolean`. Comparison operators are overloaded: they work on any type that has an order relationship, as long as both operands are compatible. Compatibility is checked at rule compilation time — a type mismatch is a compile-time error, not a runtime error.
 
-1. Are of the same data type (can't compare a number to a string).
-2. Have an order relationship.
+**Comparable type pairs:**
 
-Note that all comparison functions are boolean functions (return `true` or `false`).
+| Left type | Right type | Notes |
+|---|---|---|
+| `integer` | `integer` | exact match |
+| `decimal` | `decimal` | exact match |
+| `integer` | `decimal` | numeric widening — allowed |
+| `string` | `string` | lexicographic order |
+| `date` | `date` | chronological order |
+| `datetime` | `datetime` | chronological order |
+
+Any other combination (e.g. `string` vs `integer`, `date` vs `decimal`) is a compile-time type mismatch error.
+
+When `integer` and `decimal` are compared, the `integer` is widened to `decimal` for the comparison. The original variable is not mutated.
+
+Examples of valid and invalid usage:
+
+```json
+{ "var": "score",  "type": "integer" }
+{ "var": "cutoff", "type": "decimal" }
+{ "var": "label",  "type": "string"  }
+```
+
+```json
+{ "<": ["$score", 50] }
+```
+Valid — `integer` compared to `integer` literal.
+
+```json
+{ "<": ["$score", "$cutoff"] }
+```
+Valid — `integer` vs `decimal`, numeric widening applies.
+
+```json
+{ "<": ["$score", "$label"] }
+```
+`ERROR: type mismatch — '<' cannot compare 'integer' and 'string'`
 
 #### Lower Than
 
@@ -625,6 +674,67 @@ Declaration examples:
 Arrays require an `items` field that specifies the type of each element. The `object` type is schema-less and can hold any key-value structure.
 
 
+## Type System
+
+Criterion is strongly typed. Every variable, every function input, and every block condition has a declared or inferred type. **All type checking is performed at rule compilation time.** A rule that contains a type mismatch anywhere in its logic must be rejected before execution begins — it must never be partially executed and then fail at runtime due to a type error.
+
+The type requirements for each construct are:
+
+| Construct | Type requirement |
+|---|---|
+| `if` condition | `boolean` |
+| `while` condition | `boolean` |
+| `&&`, `\|\|`, `!`, `xor` inputs | `boolean` |
+| `<`, `>`, `==`, `!=`, `<=`, `>=` inputs | same type, or numeric-compatible (`integer` and `decimal`) |
+| `+`, `-`, `*`, `/`, `%`, `++`, `--` inputs | `integer` or `decimal` |
+| `%`, `++`, `--` inputs | `integer` only |
+| String function inputs | `string` |
+| `forEach` target | `array`; `as` binding inherits the `items` type |
+| `return` value | must match the `output` type declared on the rule, if present |
+
+When a variable reference is used as input to any of these constructs, the compiler resolves its declared type and checks it against the requirement. A mismatch is reported as a compile-time error identifying the construct, the expected type, and the actual type.
+
+**Example — `if` condition must be `boolean`:**
+
+```json
+{ "var": "score", "type": "integer" }
+```
+
+```json
+{
+  "if": "$score",
+  "then": [{ "return": true }]
+}
+```
+
+`ERROR: type mismatch — 'if' condition must be 'boolean', got 'integer'`
+
+**Example — logical operator inputs must be `boolean`:**
+
+```json
+{ "var": "age",    "type": "integer" }
+{ "var": "active", "type": "boolean" }
+```
+
+```json
+{ "&&": ["$age", "$active"] }
+```
+
+`ERROR: type mismatch — '&&' expects 'boolean' operands, got 'integer' for first operand`
+
+**Example — arithmetic inputs must be numeric:**
+
+```json
+{ "var": "name", "type": "string" }
+```
+
+```json
+{ "+": ["$name", 1] }
+```
+
+`ERROR: type mismatch — '+' expects numeric operands, got 'string'`
+
+
 ---
 
 ## Candidate Features for v1
@@ -722,6 +832,33 @@ Two options for handling chained conditions without deeply nested if-else blocks
 
 Iterates over each element of an array variable, binding the current element to a named variable for use inside the `do` block.
 
+The variable named in `as` is implicitly typed: its type is taken from the `items` declaration of the array variable referenced in `forEach`. Operations inside `do` that are incompatible with that type must produce a type mismatch error at rule compilation time, not at runtime.
+
+For example, if `$items` is declared as `array` of `date`, the rule below must fail to compile because `+` does not accept `date` operands:
+
+```json
+{ "var": "items", "type": "array", "items": "date" }
+```
+
+```json
+{
+  "forEach": "$items",
+  "as": "item",
+  "do": [
+    { "$total": { "+": ["$total", "$item"] } }
+  ]
+}
+```
+
+`+ ERROR: type mismatch — '+' expects numeric operands, 'item' is 'date'`
+
+A valid usage where `$items` is declared as `array` of `integer`:
+
+```json
+{ "var": "items", "type": "array", "items": "integer" }
+{ "var": "total", "type": "integer", "=": 0 }
+```
+
 ```json
 {
   "forEach": "$items",
@@ -734,7 +871,7 @@ Iterates over each element of an array variable, binding the current element to 
 
 #### while
 
-Repeats the `do` block while the boolean condition is `true`.
+Repeats the `do` block while the condition is `true`. The condition must resolve to `boolean` — passing any other type is a compile-time error.
 
 ```json
 {
@@ -749,11 +886,17 @@ Repeats the `do` block while the boolean condition is `true`.
 
 ### Action Blocks
 
-Data Source Blocks are read-only. Action Blocks send or write data out.
+Action Blocks are the **outbound, write** counterpart to Data Source Blocks. They use the same [External Access Types](#external-access-types) (`http`, `db`, `file`) but in write mode: sending notifications, invoking webhooks, creating or modifying remote resources, writing audit records, etc.
+
+The key distinction from Data Source Blocks:
+- **Data Source Block** — reads external data into the rule (inbound). Must not modify state.
+- **Action Block** — pushes data out from the rule (outbound). Does not return extractable data, only an optional status result.
 
 **Open decision:** Scope v1 to HTTP only, or include DB and FILE?
 
 #### HTTP Action
+
+HTTP Actions use methods that modify state (`POST`, `PUT`, `PATCH`, `DELETE`). Use cases include: invoking a webhook, sending a notification, creating or updating a remote resource, triggering an integration.
 
 ```json
 {
@@ -765,6 +908,15 @@ Data Source Blocks are read-only. Action Blocks send or write data out.
     "Authorization": "$authToken"
   },
   "body": "$payload",
+  "result": "$httpResponse"
+}
+```
+
+```json
+{
+  "action": "http",
+  "method": "DELETE",
+  "url": "https://api.example.com/sessions/$sessionId",
   "result": "$httpResponse"
 }
 ```
