@@ -623,3 +623,399 @@ Declaration examples:
 ```
 
 Arrays require an `items` field that specifies the type of each element. The `object` type is schema-less and can hold any key-value structure.
+
+
+---
+
+## Candidate Features for v1
+
+The following features are proposed for inclusion in v1 of the specification. Each item includes a description and example. Items marked with an open decision need a choice before the spec can be finalised.
+
+---
+
+### Rule Metadata
+
+Add `id`, `description`, and `version` fields to the top-level rule object to support tooling, registries, and versioning.
+
+**Open decision:** Which fields are required vs optional? Recommendation: `name` required, others optional.
+
+```json
+{
+  "id": "eligibility-check-us-v1",
+  "name": "US Eligibility Check",
+  "description": "Returns true if the person is 18 or older and located in the US",
+  "version": "1.0.0",
+  "input": [
+    { "var": "age", "type": "integer" },
+    { "var": "country", "type": "string" }
+  ],
+  "logic": [...]
+}
+```
+
+---
+
+### Output Declaration
+
+Add an `output` field to the top-level rule to declare the return type. Gives consumers and implementors a type contract for what the rule returns.
+
+**Open decision:** Required or optional?
+
+```json
+{
+  "name": "Is Eligible",
+  "input": [
+    { "var": "age", "type": "integer" }
+  ],
+  "output": { "type": "boolean" },
+  "logic": [
+    { "return": { ">=": ["$age", 18] } }
+  ]
+}
+```
+
+---
+
+### Else-If / Chained Conditions
+
+Two options for handling chained conditions without deeply nested if-else blocks.
+
+**Open decision:** Add explicit `elseif` key (Option A), or document nested `if` inside `else` as the canonical pattern (Option B, no new syntax)?
+
+**Option A — `elseif` key:**
+
+```json
+{
+  "if": { "<": ["$score", 50] },
+  "then": [{ "return": "fail" }],
+  "elseif": [
+    {
+      "condition": { "<": ["$score", 70] },
+      "then": [{ "return": "pass" }]
+    }
+  ],
+  "else": [{ "return": "distinction" }]
+}
+```
+
+**Option B — nested `if` inside `else` (no new syntax):**
+
+```json
+{
+  "if": { "<": ["$score", 50] },
+  "then": [{ "return": "fail" }],
+  "else": [
+    {
+      "if": { "<": ["$score", 70] },
+      "then": [{ "return": "pass" }],
+      "else": [{ "return": "distinction" }]
+    }
+  ]
+}
+```
+
+---
+
+### Iteration Blocks
+
+#### forEach
+
+Iterates over each element of an array variable, binding the current element to a named variable for use inside the `do` block.
+
+```json
+{
+  "forEach": "$items",
+  "as": "item",
+  "do": [
+    { "$total": { "+": ["$total", "$item"] } }
+  ]
+}
+```
+
+#### while
+
+Repeats the `do` block while the boolean condition is `true`.
+
+```json
+{
+  "while": { "<": ["$count", 10] },
+  "do": [
+    { "$count": { "++": "$count" } }
+  ]
+}
+```
+
+---
+
+### Action Blocks
+
+Data Source Blocks are read-only. Action Blocks send or write data out.
+
+**Open decision:** Scope v1 to HTTP only, or include DB and FILE?
+
+#### HTTP Action
+
+```json
+{
+  "action": "http",
+  "method": "POST",
+  "url": "https://api.example.com/notifications",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "$authToken"
+  },
+  "body": "$payload",
+  "result": "$httpResponse"
+}
+```
+
+#### DB Action
+
+```json
+{
+  "action": "db",
+  "operation": "insert",
+  "connection": "main",
+  "table": "audit_log",
+  "values": {
+    "rule_id": "$ruleId",
+    "outcome": "$result"
+  },
+  "result": "$insertedId"
+}
+```
+
+---
+
+### Variable Scope Rules
+
+Variables declared inside `then`, `else`, or `do` blocks are local to that block. Variables declared in the top-level `logic` block are accessible from all nested blocks.
+
+```json
+{
+  "if": "$isAdmin",
+  "then": [
+    { "var": "level", "type": "integer", "=": 10 }
+  ],
+  "else": [
+    { "var": "level", "type": "integer", "=": 1 }
+  ]
+}
+```
+
+`level` in `then` and `level` in `else` are separate variables in separate scopes.
+
+---
+
+### Additional Data Source Access Types
+
+Currently only HTTP GET is specified. Proposed additional access types:
+
+#### FILE
+
+```json
+{
+  "source": "config",
+  "type": "JSON",
+  "access": {
+    "type": "file",
+    "path": "/etc/rules/config.json"
+  }
+}
+```
+
+#### DB (read query)
+
+```json
+{
+  "source": "patient_record",
+  "type": "object",
+  "access": {
+    "type": "db",
+    "connection": "main",
+    "query": "SELECT * FROM patients WHERE id = ?",
+    "params": ["$patientId"]
+  }
+}
+```
+
+---
+
+### Data Source Literal — `aggregate` and `transform` Values
+
+The valid values for `aggregate` and `transform` are not yet enumerated.
+
+**`aggregate`** — controls how to reduce multiple extraction results:
+
+| Value | Meaning |
+|---|---|
+| `first` | Use the first match |
+| `last` | Use the last match |
+| `all` | Return all matches as an `array` |
+| `count` | Return the number of matches as `integer` |
+| `sum` | Sum all numeric matches |
+| `min` | Minimum of numeric matches |
+| `max` | Maximum of numeric matches |
+
+**`transform`** — post-extraction value conversion:
+
+| Value | Meaning |
+|---|---|
+| `noop` | No transformation, use value as-is |
+| `toString` | Convert to `string` |
+| `toInt` | Parse as `integer` |
+| `toDecimal` | Parse as `decimal` |
+| `toBoolean` | Parse as `boolean` |
+| `trim` | Remove leading/trailing whitespace |
+| `toLower` | Convert to lowercase |
+| `toUpper` | Convert to uppercase |
+
+Example using non-default options:
+
+```json
+{
+  "$totalScore": {
+    "source": "@results",
+    "extract": { "jsonpath": ["$.scores[*]"] },
+    "aggregate": "sum",
+    "transform": "noop"
+  }
+}
+```
+
+---
+
+### jsonpath — Single vs Multi-Path
+
+Currently `jsonpath` is always an array, but the multi-path semantics (try each path in order, use first non-null) are not defined.
+
+**Open decision:** Support multi-path array (try each path as a fallback), or simplify to a single string?
+
+**Multi-path (try each in order, use first non-null result):**
+
+```json
+{
+  "$sex": {
+    "source": "@patient",
+    "extract": {
+      "jsonpath": ["$.gender", "$.sex", "$.administrativeGender"]
+    },
+    "aggregate": "first",
+    "transform": "noop"
+  }
+}
+```
+
+**Single-path (plain string, simpler):**
+
+```json
+{
+  "$sex": {
+    "source": "@patient",
+    "extract": {
+      "jsonpath": "$.gender"
+    },
+    "aggregate": "first",
+    "transform": "noop"
+  }
+}
+```
+
+---
+
+### Null / Missing Value Handling
+
+Define behaviour when a variable is unassigned or an extraction returns no match.
+
+Proposal: failed extraction returns `null`. Operations on `null` produce a runtime error unless a `default` is specified.
+
+**`default` field on Data Source Literal:**
+
+```json
+{
+  "$age": {
+    "source": "@patient",
+    "extract": { "jsonpath": ["$.age"] },
+    "aggregate": "first",
+    "transform": "toInt",
+    "default": 0
+  }
+}
+```
+
+**`isNull` function:**
+
+```json
+{
+  "if": { "isNull": "$age" },
+  "then": [{ "return": false }],
+  "else": [{ "return": { ">=": ["$age", 18] } }]
+}
+```
+
+---
+
+### Error Handling
+
+**Open decision:** Rule-level error propagation only (simpler, recommended for v1), or explicit try/catch blocks?
+
+**Option A — error propagation (no new syntax):** Rule execution stops and returns a structured error object to the caller. Implementors handle it at the host level.
+
+Error object shape:
+
+```json
+{
+  "error": {
+    "code": "DATA_SOURCE_UNAVAILABLE",
+    "message": "HTTP GET to patient endpoint returned 503",
+    "source": "patient"
+  }
+}
+```
+
+**Option B — try/catch block:**
+
+```json
+{
+  "try": [
+    {
+      "source": "patient",
+      "type": "JSON",
+      "access": { "type": "http", "url": "https://my-fhir-server/Patient/1234", "method": "GET" }
+    },
+    { "$sex": { "source": "@patient", "extract": { "jsonpath": ["$.gender"] }, "aggregate": "first", "transform": "noop" } }
+  ],
+  "catch": [
+    { "return": false }
+  ]
+}
+```
+
+---
+
+### Variable Naming Rules
+
+Proposed rules for valid variable names:
+
+- Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`
+- Case-sensitive: `myVar` and `MyVar` are distinct variables
+- Maximum length: 64 characters
+- The `$` prefix is a reference marker, not part of the name itself
+
+Valid: `age`, `patient_id`, `isActive`, `_temp`, `x1`
+
+Invalid: `1count` (starts with digit), `my-var` (hyphen not allowed), `my var` (space not allowed)
+
+---
+
+### Type Coercion Rules
+
+**Open decision:** Strict typing (no implicit coercion) or permissive (automatic widening)?
+
+Recommendation for v1: strict typing. No implicit coercion. Assigning a `decimal` to an `integer` variable is a runtime error. Use explicit `transform` in Data Source Literals or string conversion functions for type changes.
+
+```json
+{ "var": "age", "type": "integer", "=": 3.14 }
+```
+
+The above must produce a runtime error, not silently truncate to `3`.
