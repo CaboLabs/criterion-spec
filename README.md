@@ -361,7 +361,8 @@ This function will return `true` if the value represented by the first Argument 
 ```
 
 #### Greater Than
-TBD
+
+Returns `true` if the value of the first Argument is greater than the value of the second Argument, otherwise returns `false`.
 
 ```json
 {
@@ -370,8 +371,8 @@ TBD
 ```
 
 #### Equals To
-TBD
 
+Returns `true` if both Arguments represent the same value. Both Arguments must be of the same type.
 
 ```json
 {
@@ -380,7 +381,8 @@ TBD
 ```
 
 #### Not Equals To / Different Than
-TBD
+
+Returns `true` if the Arguments have different values or are of different types, otherwise returns `false`.
 
 ```json
 {
@@ -389,7 +391,8 @@ TBD
 ```
 
 #### Lower Or Equals
-TBD
+
+Returns `true` if the value of the first Argument is lower than or equal to the value of the second Argument, otherwise returns `false`.
 
 ```json
 {
@@ -398,7 +401,8 @@ TBD
 ```
 
 #### Greater Or Equals
-TBD
+
+Returns `true` if the value of the first Argument is greater than or equal to the value of the second Argument, otherwise returns `false`.
 
 ```json
 {
@@ -411,7 +415,9 @@ TBD
 
 ### Arithmetic
 
-TBD
+Arithmetic functions operate on numeric Arguments (`integer` and `decimal`). When both inputs are `integer` the result is `integer`, except for Division which always returns `decimal`. If either input is `decimal`, the result is `decimal`.
+
+> **Precision note:** Numbers with a decimal point are represented as the native `decimal` type of the host platform (e.g. `BigDecimal` in Java, `Decimal` in Python), not as IEEE 754 floating-point. This guarantees exact decimal arithmetic and avoids precision loss.
 
 #### Increment
 
@@ -426,7 +432,7 @@ Increments the value "in place" and returns it. If the input Argument is a Varia
 
 #### Decrement
 
-TBD
+Decrements the value "in place" and returns it. If the input Argument is a Variable Reference, it will decrement the value of that variable.
 
 ```json
 {
@@ -435,7 +441,8 @@ TBD
 ```
 
 #### Addition
-TBD
+
+Returns the sum of two numeric Arguments.
 
 ```json
 {
@@ -444,7 +451,9 @@ TBD
 ```
 
 #### Subtraction
-TBD
+
+Returns the result of subtracting the second Argument from the first.
+
 ```json
 {
   "-": [1, 2]
@@ -452,7 +461,9 @@ TBD
 ```
 
 #### Division
-TBD
+
+Returns the result of dividing the first Argument by the second. Always returns `decimal`. The second Argument must not be zero.
+
 ```json
 {
   "/": [1, 2]
@@ -460,7 +471,8 @@ TBD
 ```
 
 #### Multiplication
-TBD
+
+Returns the product of two numeric Arguments.
 
 ```json
 {
@@ -468,7 +480,8 @@ TBD
 }
 ```
 #### Modulus
-TBD
+
+Returns the remainder of dividing the first Argument by the second. Both Arguments must be `integer`.
 
 ```json
 {
@@ -479,8 +492,134 @@ TBD
 
 ### Strings
 
-TBD
+String functions operate on `string` Arguments. Unless otherwise noted, they return a `string`.
+
+#### Concat
+
+Returns a new string by joining two or more string Arguments together.
+
+```json
+{
+  "concat": ["$firstName", " ", "$lastName"]
+}
+```
+
+#### Length
+
+Returns the number of characters in a string as an `integer`.
+
+```json
+{
+  "length": "$description"
+}
+```
+
+#### Trim
+
+Returns the string with leading and trailing whitespace removed.
+
+```json
+{
+  "trim": "$rawInput"
+}
+```
+
+#### ToUpper
+
+Returns the string with all characters converted to uppercase.
+
+```json
+{
+  "toUpper": "$code"
+}
+```
+
+#### ToLower
+
+Returns the string with all characters converted to lowercase.
+
+```json
+{
+  "toLower": "$email"
+}
+```
+
+#### Contains
+
+Returns `true` if the first string Argument contains the second string Argument as a substring, otherwise returns `false`.
+
+```json
+{
+  "contains": ["$body", "error"]
+}
+```
+
+#### StartsWith
+
+Returns `true` if the first string Argument starts with the second string Argument, otherwise returns `false`.
+
+```json
+{
+  "startsWith": ["$url", "https"]
+}
+```
+
+#### EndsWith
+
+Returns `true` if the first string Argument ends with the second string Argument, otherwise returns `false`.
+
+```json
+{
+  "endsWith": ["$filename", ".json"]
+}
+```
+
+#### Substring
+
+Returns a portion of the string starting at the index given by the second Argument and ending before the index given by the third Argument. Indices are zero-based.
+
+```json
+{
+  "substring": ["$text", 0, 5]
+}
+```
+
+#### Replace
+
+Returns a new string with all occurrences of the second Argument replaced by the third Argument.
+
+```json
+{
+  "replace": ["$template", "{name}", "$userName"]
+}
+```
 
 ## Criterion Data Types
 
-TBD
+Every variable and function result in Criterion has one of the following types. The type determines what values a variable can hold and what operations are valid on it.
+
+| Type | Description | JSON literal example |
+|---|---|---|
+| `boolean` | A truth value | `true` or `false` |
+| `integer` | A whole number, positive or negative | `42`, `-7` |
+| `decimal` | A number with a decimal part, represented with exact precision | `3.14`, `-0.5` |
+| `string` | A sequence of characters | `"hello"` |
+| `date` | A calendar date, encoded as an ISO 8601 string | `"2024-01-15"` |
+| `datetime` | A date and time with timezone, encoded as ISO 8601 | `"2024-01-15T10:30:00Z"` |
+| `array` | An ordered collection of values of the same type | `[1, 2, 3]` |
+| `object` | An untyped key-value map | `{"key": "value"}` |
+
+Declaration examples:
+
+```json
+{ "var": "active",     "type": "boolean"  }
+{ "var": "age",        "type": "integer"  }
+{ "var": "ratio",      "type": "decimal"  }
+{ "var": "name",       "type": "string"   }
+{ "var": "dob",        "type": "date"     }
+{ "var": "created_at", "type": "datetime" }
+{ "var": "scores",     "type": "array",   "items": "integer" }
+{ "var": "payload",    "type": "object"   }
+```
+
+Arrays require an `items` field that specifies the type of each element. The `object` type is schema-less and can hold any key-value structure.
