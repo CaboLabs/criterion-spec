@@ -32,7 +32,7 @@ Criterion Rules have three basic operations: variable declaration, value assignm
 
 ### Variable Declaration
 
-This example declares a `myVar` variable that has type `integer`. 7In general the declarations are used to define the input variables of a rule. Refer to the [Criterion Data Types](#criterion-data-types) section to see the possible types a variable can have.
+This example declares a `myVar` variable that has type `integer`. In general the declarations are used to define the input variables of a rule. Refer to the [Criterion Data Types](#criterion-data-types) section to see the possible types a variable can have.
 
 ```json
 {
@@ -175,7 +175,7 @@ This example extracts the value form the `patient` Data Source, and assigns it t
 
 
 
-## Logic BLocks
+## Logic Blocks
 
 ### Return Block
 
@@ -241,7 +241,7 @@ Defines a list of blocks that can be used by the rule or by other blocks. For in
   {
     "var": "a",
     "type": "integer",
-    "=": "1"
+    "=": 1
   },
   {
     "return": "$a"
@@ -258,12 +258,12 @@ This is a flow-control block, that checks a boolean condition, and when the cond
   "if": "$is_pending",
   "then": [
     {
-      "return": "555"
+      "return": 555
     }
   ],
   "else":[
     {
-      "return": "890"
+      "return": 890
     }
   ]
 }
@@ -309,7 +309,9 @@ The result is `true` if both input [Arguments](#arguments) are `true`, otherwise
 ```
 
 #### Or
-TBD
+
+Returns `true` if at least one of the two input Arguments is `true`, otherwise returns `false`.
+
 ```json
 {
   "||": [true, false]
@@ -317,16 +319,18 @@ TBD
 ```
 
 #### Not
-TBD
+
+Returns `true` if the input Argument is `false`, and `false` if the input Argument is `true`. Takes exactly one boolean Argument.
 
 ```json
 {
-  "!": [true, false]
+  "!": true
 }
 ```
 
 #### Xor
-TBD
+
+Returns `true` if exactly one of the two input Arguments is `true`. If both are `true` or both are `false`, returns `false`.
 
 ```json
 {
@@ -415,7 +419,7 @@ Increments the value "in place" and returns it. If the input Argument is a Varia
 
 ```json
 {
-  "++": $myNumber
+  "++": "$myNumber"
 }
 ```
 
@@ -426,7 +430,7 @@ TBD
 
 ```json
 {
-  "--": $myNumber
+  "--": "$myNumber"
 }
 ```
 
